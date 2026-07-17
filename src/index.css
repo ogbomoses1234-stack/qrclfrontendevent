@@ -1,0 +1,177 @@
+@import "tailwindcss";
+
+/* ====== Custom Dashboard Components ====== */
+.dashboard-panel {
+  @apply bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col;
+}
+
+.panel-header {
+  @apply text-xs font-bold text-orange-600 mb-3 flex items-center gap-2 tracking-wide;
+}
+
+.panel-badge {
+  @apply bg-orange-600 text-white w-5 h-5 rounded-md flex items-center justify-center text-[0.65rem] font-extrabold;
+}
+
+/* ====== WhatsApp Phone Mockup ====== */
+.phone-frame {
+  width: 100%;
+  max-width: 280px;
+  height: 520px;
+  border: 10px solid #1a1a2e;
+  border-radius: 36px;
+  background: #e5ddd5;
+  margin: 0 auto;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+}
+
+.phone-notch-bar {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 22px;
+  background: #1a1a2e;
+  border-radius: 0 0 14px 14px;
+  z-index: 10;
+}
+
+.wa-chat-header {
+  background: #075e54;
+  color: #fff;
+  padding: 32px 12px 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.wa-bubble-out {
+  background: #dcf8c6;
+  border-radius: 7px 7px 3px 7px;
+  padding: 8px 10px;
+  margin: 10px 12px;
+  font-size: 12.5px;
+  color: #111;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  position: relative;
+  max-width: 85%;
+  margin-left: auto;
+}
+
+.wa-bubble-out::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -7px;
+  width: 0;
+  height: 0;
+  border-top: 8px solid #dcf8c6;
+  border-right: 8px solid transparent;
+}
+
+/* ====== Status Badge ====== */
+.status-badge {
+  @apply px-2 py-0.5 rounded-full text-[11px] font-semibold;
+}
+
+/* ====== Template Card ====== */
+.template-card {
+  transition: all 0.2s ease;
+  border: 1px solid #e2e8f0;
+}
+.template-card:hover {
+  border-color: #fdba74;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* ====== Variant Pills ====== */
+.variant-pill {
+  @apply px-2.5 py-0.5 rounded-full text-[10px] font-medium border cursor-pointer select-none transition;
+}
+
+/* ====== View Toggle Active State ====== */
+.active-view {
+  @apply bg-orange-600 text-white;
+}
+
+/* ====== Modal Overlay ====== */
+.modal-overlay {
+  @apply bg-black/50 backdrop-blur-sm;
+}
+
+/* ====== Animations ====== */
+.pulse-dot {
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease forwards;
+}
+@keyframes slideIn {
+  from { transform: translateX(120%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* ====== Toggle Switch ====== */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #cbd5e1;
+  transition: 0.3s;
+  border-radius: 24px;
+}
+.toggle-slider::before {
+  content: "";
+  position: absolute;
+  height: 18px; width: 18px;
+  left: 3px; bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+input:checked + .toggle-slider {
+  background-color: #10b981;
+}
+input:checked + .toggle-slider::before {
+  transform: translateX(20px);
+}
+
+/* ====== Chart Container ====== */
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 280px;
+}
+.variant-pill {
+  transition: all 0.2s ease;
+  border: 1px solid #d1d5db;
+}
+.variant-pill.active {
+  background: #ea580c;
+  color: white;
+  border-color: #ea580c;
+}
+/* ====== Scrollbar ====== */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }

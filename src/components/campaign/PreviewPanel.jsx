@@ -1,0 +1,42 @@
+// src/components/campaign/PreviewPanel.jsx
+import PhonePreview from '../common/PhonePreview';
+
+export default function PreviewPanel({
+  recipientData, messageText, qrUrl, showQR,
+  currentIndex, total, onPrev, onNext,
+  variantLabel, onCycleVariant,
+}) {
+  return (
+    <div className="dashboard-panel p-4 bg-gray-50/80">
+      <div className="panel-header flex justify-between">
+        <div className="flex items-center gap-2">
+          <div className="panel-badge">3</div> LIVE PREVIEW
+        </div>
+        <div className="flex items-center gap-1">
+          <button onClick={onPrev} className="text-gray-400 hover:text-gray-700 text-xs px-1.5 py-0.5 rounded" title="Previous recipient">
+            <i className="fas fa-chevron-left"></i>
+          </button>
+          <span className="text-[10px] text-gray-500 font-mono">{currentIndex}/{total}</span>
+          <button onClick={onNext} className="text-gray-400 hover:text-gray-700 text-xs px-1.5 py-0.5 rounded" title="Next recipient">
+            <i className="fas fa-chevron-right"></i>
+          </button>
+          <span className="text-gray-300 mx-1">|</span>
+          <button onClick={() => onCycleVariant(-1)} className="text-gray-400 hover:text-indigo-600 text-xs px-1.5 py-0.5 rounded" title="Previous variant">
+            <i className="fas fa-sync-alt fa-rotate-270 text-[10px]"></i>
+          </button>
+          <span className="text-[10px] text-indigo-500 font-mono">{variantLabel || 'V1'}</span>
+          <button onClick={() => onCycleVariant(1)} className="text-gray-400 hover:text-indigo-600 text-xs px-1.5 py-0.5 rounded" title="Next variant">
+            <i className="fas fa-sync-alt fa-rotate-90 text-[10px]"></i>
+          </button>
+        </div>
+      </div>
+      <PhonePreview
+        name={recipientData?.name}
+        phone={recipientData?.phone}
+        message={messageText}
+        qrUrl={qrUrl}
+        showQR={showQR}
+      />
+    </div>
+  );
+}

@@ -1,0 +1,97 @@
+import Button from '../common/Button';
+
+const statusColors = {
+  completed: 'bg-green-100 text-green-700',   // from backend
+  delivered: 'bg-green-100 text-green-700',
+  scheduled: 'bg-blue-100 text-blue-700',
+  failed: 'bg-red-100 text-red-700',
+  cancelled: 'bg-gray-100 text-gray-600',
+  sending: 'bg-yellow-100 text-yellow-700',
+  draft: 'bg-gray-100 text-gray-600',
+};
+
+export default function CampaignList({ campaigns, onEdit, onDelete }) {
+  if (!campaigns || campaigns.length === 0) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-10 text-center text-gray-400">
+        <i className="fas fa-inbox text-4xl mb-2 block"></i>
+        No campaigns found
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm text-left whitespace-nowrap">
+          <thead className="bg-gray-50 text-gray-500 font-semibold border-b">
+            <tr>
+              <th className="px-5 py-3">Campaign</th>
+              <th className="px-5 py-3">Template</th>
+              <th className="px-5 py-3">Variants</th>
+              <th className="px-5 py-3">Date</th>
+              <th className="px-5 py-3">Recipients</th>
+              <th className="px-5 py-3">Batch Info</th>
+              <th className="px-5 py-3">Status</th>
+              <th className="px-5 py-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {campaigns.map((c) => {
+              const recipCount = Array.isArray(c.recipients) ? c.recipients.length : c.recipients;
+              const activeVariantCount = c.activeVariants?.length || 1;
+              const totalVariants = c.variants?.length || 1;
+              const variantDisplay = `${activeVariantCount}/${totalVariants}`;
+              const batchInfo = `${c.batchSize || '?'} msgs · ${
+                c.waitValue || '?'} ${c.waitUnit || 'min'}`;
+
+              return (
+                <tr key={c._id || c.id} className="hover:bg-gray-50 transition">
+                  <td className="px-5 py-4 font-medium">{c.name}</td>
+                  <td className="px-5 py-4 text-gray-600">{c.templateName || c.template || '—'}</td>
+                  <td className="px-5 py-4">
+                    <span className="text-xs bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full">
+                      {variantDisplay} variants
+                    </span>
+                  </td>
+                  <td className="px-5 py-4 text-gray-500 text-xs">
+                    {new Date(c.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-5 py-4">{recipCount}</td>
+                  <td className="px-5 py-4 text-xs text-gray-500">{batchInfo}</td>
+                  <td className="px-5 py-4">
+                    <span
+                      className={`status-badge ${statusColors[c.status] || 'bg-gray-100 text-gray-600'}`}
+                    >
+                      {c.status === 'completed'
+                        ? 'Delivered'
+                        : c.status.charAt(0).toUpperCase() + c.status.slice(1)}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => onEdit(c._id || c.id)}
+                        className="text-gray-400 hover:text-indigo-600"
+                        title="Edit & Resend"
+                      >
+                        <i className="fas fa-edit"></i>
+                      </button>
+                      <button
+                        onClick={() => onDelete(c._id || c.id)}
+                        className="text-gray-400 hover:text-red-500"
+                        title="Delete"
+                      >
+                        <i className="fas fa-trash-alt"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
