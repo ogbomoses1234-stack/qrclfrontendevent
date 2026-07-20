@@ -12,7 +12,10 @@ import SentHistoryPage from './pages/SentHistoryPage';
 import TemplatesPage from './pages/TemplatesPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import SettingsPage from './pages/SettingsPage';
+import DesignsPage from './pages/DesignsPage';
+import SpreadsheetEditorPage from './pages/SpreadsheetEditorPage';
 
+   import VariantEditPage from './pages/VariantEditPage';
 export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const toggleMobileMenu = () => setMobileMenuOpen((prev) => !prev);
@@ -39,6 +42,7 @@ export default function App() {
                     >
                       <Sidebar onCloseMobile={() => setMobileMenuOpen(false)} />
                     </div>
+                    
                     {mobileMenuOpen && (
                       <div
                         className="fixed inset-0 bg-black/50 z-20 lg:hidden"
@@ -48,11 +52,16 @@ export default function App() {
                     <main className="flex-1 flex flex-col h-screen overflow-hidden">
                       <Header onToggleMobileMenu={toggleMobileMenu} />
                       <Routes>
+                     <Route path="/spreadsheet-editor" element={<SpreadsheetEditorPage />} />
+
+
+<Route path="/templates/:templateId/variants/:variantIndex" element={<VariantEditPage />} />
                         <Route path="/" element={<CampaignBuilderPage />} />
                         <Route path="/history" element={<SentHistoryPage />} />
                         <Route path="/templates" element={<TemplatesPage />} />
                         <Route path="/analytics" element={<AnalyticsPage />} />
                         <Route path="/settings" element={<SettingsPage />} />
+                        <Route path="/designs" element={<DesignsPage />} />
                       </Routes>
                     </main>
                   </div>

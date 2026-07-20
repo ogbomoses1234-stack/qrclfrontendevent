@@ -1,9 +1,18 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { deleteTemplateVariant } from '../../services/templateService';
+import VariantBodyEditor from './VariantBodyEditor';
 
-export default function VariantEditor({ variants: initialVariants, onSave, onCancel }) {
+export default function VariantEditor({
+  variants: initialVariants,
+  onSave,
+  onCancel,
+  templateId,
+  showToast,
+}) {
   const [variants, setVariants] = useState(initialVariants || []);
+  const navigate = useNavigate();
 
-  // Sync local state when initial variants change (e.g., when opening a different template)
   useEffect(() => {
     setVariants(initialVariants || []);
   }, [initialVariants]);
@@ -38,22 +47,29 @@ export default function VariantEditor({ variants: initialVariants, onSave, onCan
     setVariants([...variants, newVariant]);
   };
 
-  const removeVariant = (index) => {
+  const removeVariant = async (index) => {
     if (variants.length <= 1) return;
+    if (templateId) {
+      try {
+        await deleteTemplateVariant(templateId, index);
+      } catch (err) {
+        showToast('error', 'Failed to delete variant', err.response?.data?.message || err.message);
+        return;
+      }
+    }
     setVariants(variants.filter((_, i) => i !== index));
   };
 
   const handleSave = () => {
-    // Basic validation: at least one variant must have a body
     if (!variants.some((v) => v.body.trim().length > 0)) {
-      alert('Please add content to at least one variant.');
+      showToast('warning', 'Add content', 'Please add content to at least one variant.');
       return;
     }
     onSave(variants);
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gray-700">📝 Message Variants</h3>
         <button
@@ -64,9 +80,12 @@ export default function VariantEditor({ variants: initialVariants, onSave, onCan
           + Add Variant
         </button>
       </div>
-      <p className="text-[10px] text-gray-400">Each recipient randomly receives one active variant.</p>
+      <p className="text-[10px] text-gray-400">
+        Each recipient randomly receives one active variant.
+      </p>
+
       {variants.map((v, idx) => (
-        <div key={idx} className="bg-white rounded-lg border p-3 space-y-2">
+        <div key={idx} className="bg-white rounded-lg border p-3 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <button
@@ -81,28 +100,49 @@ export default function VariantEditor({ variants: initialVariants, onSave, onCan
               </button>
               <span className="text-[9px] text-gray-400">Variant {idx + 1}</span>
             </div>
-            <button onClick={() => removeVariant(idx)} className="text-gray-400 hover:text-red-500">
-              <i className="fas fa-times text-xs"></i>
-            </button>
+            <div className="flex items-center gap-1">
+              {/* Pencil icon – navigates to full‑page editor */}
+              <button
+                onClick={() => navigate(`/templates/${templateId}/variants/${idx}`)}
+                className="text-gray-400 hover:text-blue-600 p-1"
+                title="Edit in full editor"
+              >
+                <i className="fas fa-pencil-alt text-xs"></i>
+              </button>
+              <button
+                onClick={() => removeVariant(idx)}
+                className="text-gray-400 hover:text-red-500 p-1"
+                title="Delete this variant"
+              >
+                <i className="fas fa-times text-xs"></i>
+              </button>
+            </div>
           </div>
-          <div className="flex gap-2">
+
+          {/* Variant label */}
+          <div>
+            <label className="text-[10px] text-gray-500 font-semibold mb-1 block">Label</label>
             <input
               type="text"
               value={v.label}
               onChange={(e) => handleLabelChange(idx, e.target.value)}
               placeholder="Label"
-              className="w-28 border border-gray-200 rounded px-2 py-1 text-xs"
+              className="w-full border border-gray-200 rounded px-3 py-1.5 text-xs"
             />
-            <textarea
-              rows="3"
+          </div>
+
+          {/* Message body – simple editor, no toolbar */}
+          <div>
+            <label className="text-[10px] text-gray-500 font-semibold mb-1 block">Message Body</label>
+            <VariantBodyEditor
               value={v.body}
-              onChange={(e) => handleBodyChange(idx, e.target.value)}
-              placeholder="Message body... Use {{1}} {{2}} {{3}}"
-              className="flex-1 border border-gray-200 rounded px-2 py-1 text-xs resize-none"
-            ></textarea>
+              onChange={(val) => handleBodyChange(idx, val)}
+              showToolbar={false}
+            />
           </div>
         </div>
       ))}
+
       <div className="flex justify-end gap-2 pt-3 border-t">
         <button onClick={onCancel} className="text-gray-600 border border-gray-200 px-4 py-2 rounded-lg text-xs hover:bg-gray-50">
           Cancel

@@ -33,6 +33,9 @@ export default function Sidebar({ onCloseMobile }) {
         <NavLink to="/analytics" className={linkClass} onClick={onCloseMobile}>
           <i className="fas fa-chart-bar w-4"></i> Analytics
         </NavLink>
+        <NavLink to="/designs" className={linkClass}>
+  <i className="fas fa-paint-brush w-4"></i> Designs
+</NavLink>
         <NavLink to="/settings" className={linkClass} onClick={onCloseMobile}>
           <i className="fas fa-cog w-4"></i> Settings
         </NavLink>

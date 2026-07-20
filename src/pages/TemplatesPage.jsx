@@ -11,6 +11,8 @@ import {
   updateTemplate,
   cloneTemplate,
   deleteTemplate,
+  bulkDeleteTemplates,        // new
+  deleteTemplateVariant,       // new (used inside VariantEditor if needed)
 } from '../services/templateService';
 
 export default function TemplatesPage() {
@@ -22,12 +24,14 @@ export default function TemplatesPage() {
   const [deleteId, setDeleteId] = useState(null);
   const showToast = useToast();
 
+  // Multi‑select state
+  const [selectedIds, setSelectedIds] = useState(new Set());
+
   // Fetch templates from backend
   const fetchTemplates = useCallback(async () => {
     setLoading(true);
     try {
       const res = await getTemplates();
-      // Handle possible data nesting
       const data = res.data || res;
       setTemplates(data.templates || data || []);
     } catch (err) {
@@ -41,14 +45,43 @@ export default function TemplatesPage() {
     fetchTemplates();
   }, [fetchTemplates]);
 
-  // Create or update template basic info (no variants)
+  // Toggle single selection
+  const toggleSelect = (id, isSelected) => {
+    const newSet = new Set(selectedIds);
+    if (isSelected) newSet.add(id);
+    else newSet.delete(id);
+    setSelectedIds(newSet);
+  };
+
+  // Select / deselect all
+  const toggleSelectAll = () => {
+    if (selectedIds.size === templates.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(templates.map(t => t._id)));
+    }
+  };
+
+  // Bulk delete
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    try {
+      await bulkDeleteTemplates(Array.from(selectedIds));
+      showToast('success', `Deleted ${selectedIds.size} templates`);
+      setSelectedIds(new Set());
+      fetchTemplates();
+    } catch (err) {
+      showToast('error', 'Bulk delete failed', err.response?.data?.message || err.message);
+    }
+  };
+
+  // Create or update template basic info (unchanged)
   const handleFormSave = async ({ name, category, showQR }) => {
     try {
       if (selectedTemplate) {
         await updateTemplate(selectedTemplate._id, { name, category, showQR });
         showToast('success', 'Updated', `Template "${name}" updated.`);
       } else {
-        // When creating a new template, always supply a default variant with a body
         await createTemplate({
           name,
           category,
@@ -88,7 +121,7 @@ export default function TemplatesPage() {
     setShowVariantEditor(false);
   };
 
-  // Clone a template via API
+  // Clone a template via API (unchanged)
   const handleClone = async (id) => {
     try {
       await cloneTemplate(id);
@@ -99,7 +132,7 @@ export default function TemplatesPage() {
     }
   };
 
-  // Delete a template
+  // Delete a single template (unchanged)
   const confirmDelete = async () => {
     if (!deleteId) return;
     try {
@@ -135,6 +168,7 @@ export default function TemplatesPage() {
   return (
     <div className="flex-1 overflow-y-auto p-5">
       <div className="max-w-6xl mx-auto space-y-5">
+        {/* Header */}
         <div className="flex justify-between items-center">
           <h1 className="text-xl font-extrabold text-gray-800 flex items-center gap-2">
             <i className="fas fa-file-alt text-orange-500"></i> Message Templates
@@ -170,48 +204,13 @@ export default function TemplatesPage() {
           </div>
         </div>
 
-        {/* Filters */}
+        {/* Filters & selection actions */}
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => setCategoryFilter('all')}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition ${
-              categoryFilter === 'all' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            All
-          </button>
-          <button
-            onClick={() => setCategoryFilter('delivery')}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition flex items-center gap-1.5 ${
-              categoryFilter === 'delivery' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            <i className="fas fa-ticket-alt"></i> Delivery
-          </button>
-          <button
-            onClick={() => setCategoryFilter('reminder')}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition flex items-center gap-1.5 ${
-              categoryFilter === 'reminder' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            <i className="fas fa-clock"></i> Reminder
-          </button>
-          <button
-            onClick={() => setCategoryFilter('thanks')}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition flex items-center gap-1.5 ${
-              categoryFilter === 'thanks' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            <i className="fas fa-envelope-open-text"></i> Thanks
-          </button>
-          <button
-            onClick={() => setCategoryFilter('custom')}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition flex items-center gap-1.5 ${
-              categoryFilter === 'custom' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            <i className="fas fa-sliders-h"></i> Custom
-          </button>
+          <button onClick={() => setCategoryFilter('all')} className={`px-3 py-1 rounded-full text-xs font-medium transition ${categoryFilter === 'all' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>All</button>
+          <button onClick={() => setCategoryFilter('delivery')} className={`px-3 py-1 rounded-full text-xs font-medium transition flex items-center gap-1.5 ${categoryFilter === 'delivery' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><i className="fas fa-ticket-alt"></i> Delivery</button>
+          <button onClick={() => setCategoryFilter('reminder')} className={`px-3 py-1 rounded-full text-xs font-medium transition flex items-center gap-1.5 ${categoryFilter === 'reminder' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><i className="fas fa-clock"></i> Reminder</button>
+          <button onClick={() => setCategoryFilter('thanks')} className={`px-3 py-1 rounded-full text-xs font-medium transition flex items-center gap-1.5 ${categoryFilter === 'thanks' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><i className="fas fa-envelope-open-text"></i> Thanks</button>
+          <button onClick={() => setCategoryFilter('custom')} className={`px-3 py-1 rounded-full text-xs font-medium transition flex items-center gap-1.5 ${categoryFilter === 'custom' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><i className="fas fa-sliders-h"></i> Custom</button>
           <input
             type="text"
             placeholder="Search templates..."
@@ -219,15 +218,26 @@ export default function TemplatesPage() {
             onChange={(e) => setSearch(e.target.value)}
             className="ml-auto border border-gray-200 rounded-lg px-3 py-1.5 text-xs w-48 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition"
           />
+
+          {/* Selection controls */}
+          <button
+            onClick={toggleSelectAll}
+            className="text-xs text-gray-500 hover:text-orange-600 ml-2"
+          >
+            {selectedIds.size === templates.length ? 'Deselect All' : 'Select All'}
+          </button>
+          {selectedIds.size > 0 && (
+            <button
+              onClick={handleBulkDelete}
+              className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-red-200 flex items-center gap-1"
+            >
+              <i className="fas fa-trash-alt"></i> Delete ({selectedIds.size})
+            </button>
+          )}
         </div>
 
-        <div
-          className={
-            view === 'grid'
-              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
-              : 'space-y-3'
-          }
-        >
+        {/* Template cards */}
+        <div className={view === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-3'}>
           {filtered.map((tpl) => (
             <TemplateCard
               key={tpl._id || tpl.id}
@@ -235,6 +245,8 @@ export default function TemplatesPage() {
               onEdit={() => handleEditVariants(tpl)}
               onClone={handleClone}
               onDelete={(id) => setDeleteId(id)}
+              selected={selectedIds.has(tpl._id)}
+              onSelect={toggleSelect}
             />
           ))}
           {filtered.length === 0 && (
@@ -245,7 +257,7 @@ export default function TemplatesPage() {
         </div>
       </div>
 
-      {/* Template Form Modal (name, category, QR toggle) */}
+      {/* Template Form Modal */}
       <TemplateForm
         isOpen={showForm}
         onClose={() => setShowForm(false)}
@@ -253,23 +265,25 @@ export default function TemplatesPage() {
         initialData={selectedTemplate}
       />
 
-      {/* Variant Editor Modal */}
+      {/* Variant Editor Modal – now passes templateId and showToast for individual variant deletion */}
       <Modal
         isOpen={showVariantEditor}
         onClose={() => setShowVariantEditor(false)}
         title={`Edit Variants - ${selectedTemplate?.name}`}
         size="max-w-3xl"
       >
-    {selectedTemplate && (
-  <VariantEditor
-    variants={selectedTemplate.variants}
-    onSave={handleSaveVariants}
-    onCancel={() => setShowVariantEditor(false)}
-  />
-)}
+        {selectedTemplate && (
+          <VariantEditor
+            variants={selectedTemplate.variants}
+            onSave={handleSaveVariants}
+            onCancel={() => setShowVariantEditor(false)}
+            templateId={selectedTemplate._id}   // needed for backend deletion
+            showToast={showToast}               // needed for feedback
+          />
+        )}
       </Modal>
 
-      {/* Delete Confirmation */}
+      {/* Delete Confirmation (single template) */}
       <Modal
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
@@ -279,12 +293,8 @@ export default function TemplatesPage() {
           This will permanently delete the template and its variants.
         </p>
         <div className="flex justify-end gap-2 mt-4">
-          <Button variant="outline" onClick={() => setDeleteId(null)}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={confirmDelete}>
-            Delete
-          </Button>
+          <Button variant="outline" onClick={() => setDeleteId(null)}>Cancel</Button>
+          <Button variant="danger" onClick={confirmDelete}>Delete</Button>
         </div>
       </Modal>
     </div>

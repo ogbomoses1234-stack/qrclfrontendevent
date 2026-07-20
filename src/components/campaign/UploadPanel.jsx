@@ -1,8 +1,13 @@
 import { useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import * as XLSX from 'xlsx';
+import { useToast } from '../layout/Toast';
 
-export default function UploadPanel({ onDataLoaded, onReset }) {
+export default function UploadPanel({ onReset }) {
+  const navigate = useNavigate();
+  const showToast = useToast();
+
   const parseFile = useCallback((file) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -12,13 +17,20 @@ export default function UploadPanel({ onDataLoaded, onReset }) {
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
         if (json.length === 0) throw new Error('Empty file');
-        onDataLoaded(file.name, json);
+        
+        // Navigate to spreadsheet editor with parsed data
+        navigate('/spreadsheet-editor', { 
+          state: { parsedData: json, fileName: file.name } 
+        });
       } catch (err) {
-        onDataLoaded(null, null, 'Could not parse file. Ensure it has headers and data rows.');
+        showToast('error', 'Parse Error', 'Could not parse file. Ensure it has headers and data rows.');
       }
     };
+    reader.onerror = () => {
+      showToast('error', 'File Error', 'Could not read file. Please try again.');
+    };
     reader.readAsArrayBuffer(file);
-  }, [onDataLoaded]);
+  }, [navigate, showToast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (acceptedFiles) => {
@@ -45,9 +57,8 @@ export default function UploadPanel({ onDataLoaded, onReset }) {
         <input {...getInputProps()} />
         <i className="fas fa-cloud-upload-alt text-4xl text-blue-300 mb-2"></i>
         <p className="text-gray-600 font-medium text-xs">Drag & drop your Excel/CSV file here, or click to browse.</p>
-        <p className="text-gray-400 text-[10px] mt-2">Expected columns: Name, Phone, QR_URL, Event, Date</p>
+        <p className="text-gray-400 text-[10px] mt-2">You'll be able to edit the data before proceeding.</p>
       </div>
-      {/* Success state could be lifted to parent or shown conditionally */}
     </div>
   );
 }

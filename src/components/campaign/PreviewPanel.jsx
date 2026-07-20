@@ -30,6 +30,7 @@ export default function PreviewPanel({
           </button>
         </div>
       </div>
+
       <PhonePreview
         name={recipientData?.name}
         phone={recipientData?.phone}
@@ -37,6 +38,24 @@ export default function PreviewPanel({
         qrUrl={qrUrl}
         showQR={showQR}
       />
+
+      {/* Quick link to view the actual QR/composite image (only when a URL exists) */}
+      {showQR && qrUrl && (
+        <div className="mt-2 text-center">
+          <a
+            href={qrUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] text-blue-500 underline hover:text-blue-700"
+          >
+            <i className="fas fa-external-link-alt mr-1"></i>
+            View generated QR image
+          </a>
+          <div className="text-[9px] text-gray-400 mt-0.5 break-all">
+            {qrUrl.length > 60 ? qrUrl.slice(0, 60) + '…' : qrUrl}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
