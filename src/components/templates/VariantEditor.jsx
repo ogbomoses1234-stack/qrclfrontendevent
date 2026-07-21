@@ -101,7 +101,6 @@ export default function VariantEditor({
               <span className="text-[9px] text-gray-400">Variant {idx + 1}</span>
             </div>
             <div className="flex items-center gap-1">
-              {/* Pencil icon – navigates to full‑page editor */}
               <button
                 onClick={() => navigate(`/templates/${templateId}/variants/${idx}`)}
                 className="text-gray-400 hover:text-blue-600 p-1"
@@ -131,24 +130,33 @@ export default function VariantEditor({
             />
           </div>
 
-          {/* Message body – simple editor, no toolbar */}
+          {/* Message body container (without custom toolbar) */}
           <div>
-            <label className="text-[10px] text-gray-500 font-semibold mb-1 block">Message Body</label>
-            <VariantBodyEditor
-              value={v.body}
-              onChange={(val) => handleBodyChange(idx, val)}
-              showToolbar={false}
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-[10px] text-gray-500 font-semibold">Message Body</label>
+            </div>
+            <VariantBodyEditor 
+              value={v.body} 
+              onChange={(value) => handleBodyChange(idx, value)} 
+              showToolbar={false} 
             />
           </div>
         </div>
       ))}
 
-      <div className="flex justify-end gap-2 pt-3 border-t">
-        <button onClick={onCancel} className="text-gray-600 border border-gray-200 px-4 py-2 rounded-lg text-xs hover:bg-gray-50">
+      {/* Action Footer Buttons */}
+      <div className="flex justify-end gap-2 pt-2">
+        <button 
+          onClick={onCancel} 
+          className="text-gray-600 border border-gray-200 px-4 py-2 rounded-lg text-xs hover:bg-gray-50"
+        >
           Cancel
         </button>
-        <button onClick={handleSave} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-blue-700">
-          Save Variants
+        <button 
+          onClick={handleSave} 
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-blue-700"
+        >
+          Save Changes
         </button>
       </div>
     </div>

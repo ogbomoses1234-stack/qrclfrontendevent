@@ -1,13 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useToast } from '../components/layout/Toast';          // correct path from pages/
+import { useToast } from '../components/layout/Toast';
 import Modal from '../components/common/Modal';
 import Button from '../components/common/Button';
-import DesignEditor from '../components/designs/DesignEditor';  // editor is separate
-import { getDesigns } from '../services/designService';
+import DesignEditor from '../components/designs/DesignEditor';
+import { getDesigns, deleteDesign } from '../services/designService';
 
 // ---------- Sub‑component to display a saved design with QR overlay ----------
-function DesignCard({ design }) {
-  // Store natural dimensions to calculate percentage positions dynamically
+function DesignCard({ design, onEdit, onDelete }) {
   const [naturalDimensions, setNaturalDimensions] = useState({
     width: design.naturalWidth || 0,
     height: design.naturalHeight || 0
@@ -23,8 +22,6 @@ function DesignCard({ design }) {
   };
 
   const { x, y, width, height } = design.qrPosition;
-  
-  // Calculate percentage-based placement for perfect fluid responsiveness
   const hasDimensions = naturalDimensions.width > 0 && naturalDimensions.height > 0;
   const style = hasDimensions ? {
     left: `${(x / naturalDimensions.width) * 100}%`,
@@ -34,7 +31,25 @@ function DesignCard({ design }) {
   } : { display: 'none' };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow duration-200">
+    <div className="bg-white rounded-xl border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow duration-200 relative group">
+      {/* Edit & Delete buttons – visible on hover */}
+      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+        <button
+          onClick={() => onEdit(design)}
+          className="p-1.5 bg-white rounded-full shadow text-gray-500 hover:text-blue-600"
+          title="Edit design"
+        >
+          <i className="fas fa-pencil-alt text-xs"></i>
+        </button>
+        <button
+          onClick={() => onDelete(design._id)}
+          className="p-1.5 bg-white rounded-full shadow text-gray-500 hover:text-red-600"
+          title="Delete design"
+        >
+          <i className="fas fa-trash-alt text-xs"></i>
+        </button>
+      </div>
+
       <div className="relative w-full rounded-lg overflow-hidden bg-gray-50" style={{ lineHeight: 0 }}>
         <img
           src={design.imageUrl}
@@ -42,7 +57,6 @@ function DesignCard({ design }) {
           className="w-full h-auto block select-none"
           onLoad={handleImageLoad}
         />
-        {/* Absolutely positioned overlay using CSS percentages */}
         {hasDimensions && (
           <div
             className="absolute border-2 border-dashed border-orange-500 bg-orange-100/30 pointer-events-none rounded shadow-sm"
@@ -62,6 +76,7 @@ export default function DesignsPage() {
   const [designs, setDesigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showEditor, setShowEditor] = useState(false);
+  const [selectedDesign, setSelectedDesign] = useState(null);   // for editing
   const showToast = useToast();
 
   const fetchDesigns = useCallback(async () => {
@@ -79,7 +94,30 @@ export default function DesignsPage() {
   useEffect(() => { fetchDesigns(); }, [fetchDesigns]);
 
   const handleDesignCreated = (newDesign) => {
-    setDesigns((prev) => [newDesign, ...prev]);
+    if (selectedDesign) {
+      // Update existing design in list
+      setDesigns((prev) => prev.map((d) => (d._id === newDesign._id ? newDesign : d)));
+    } else {
+      // Add new design to list
+      setDesigns((prev) => [newDesign, ...prev]);
+    }
+    setSelectedDesign(null);
+  };
+
+  const handleEdit = (design) => {
+    setSelectedDesign(design);
+    setShowEditor(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this design? This action cannot be undone.')) return;
+    try {
+      await deleteDesign(id);
+      showToast('success', 'Design deleted');
+      fetchDesigns();
+    } catch (err) {
+      showToast('error', 'Delete failed', err.response?.data?.message || err.message);
+    }
   };
 
   return (
@@ -101,21 +139,25 @@ export default function DesignsPage() {
             No designs yet. Create one to use in your campaigns.
           </div>
         ) : (
-          /* Responsive Masonry Layout Columns */
           <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
             {designs.map((d) => (
               <div key={d._id} className="break-inside-avoid">
-                <DesignCard design={d} />
+                <DesignCard
+                  design={d}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
               </div>
             ))}
           </div>
         )}
       </div>
 
-      <Modal isOpen={showEditor} onClose={() => setShowEditor(false)} title="" size="max-w-3xl">
+      <Modal isOpen={showEditor} onClose={() => { setShowEditor(false); setSelectedDesign(null); }} title="" size="max-w-3xl">
         <DesignEditor
-          onClose={() => setShowEditor(false)}
+          onClose={() => { setShowEditor(false); setSelectedDesign(null); }}
           onDesignCreated={handleDesignCreated}
+          initialDesign={selectedDesign}
         />
       </Modal>
     </div>

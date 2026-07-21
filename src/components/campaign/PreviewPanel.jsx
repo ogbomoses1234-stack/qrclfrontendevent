@@ -35,11 +35,12 @@ export default function PreviewPanel({
         name={recipientData?.name}
         phone={recipientData?.phone}
         message={messageText}
+        isHtml={true} // 🌟 Added: Flags that message content requires HTML rendering support
         qrUrl={qrUrl}
         showQR={showQR}
       />
 
-      {/* Quick link to view the actual QR/composite image (only when a URL exists) */}
+      {/* Quick link to view the actual QR/composite image */}
       {showQR && qrUrl && (
         <div className="mt-2 text-center">
           <a

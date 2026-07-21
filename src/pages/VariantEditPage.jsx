@@ -43,10 +43,14 @@ export default function VariantEditPage() {
   }, [templateId, variantIndex, navigate, showToast]);
 
   const handleSave = async () => {
-    if (!body.trim()) {
+    // Strip HTML tags and line breaks to verify if content is truly empty
+    const strippedBody = body.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim();
+    
+    if (!strippedBody) {
       showToast('warning', 'Empty body', 'Please add some content to the message.');
       return;
     }
+    
     setSaving(true);
     try {
       const variants = [...template.variants];
@@ -100,7 +104,7 @@ export default function VariantEditPage() {
 
           <div>
             <label className="text-xs font-semibold text-gray-500">Message Body</label>
-            {/* Rich editor with full toolbar */}
+            {/* Rich editor with the customized matching toolbar configuration */}
             <VariantBodyEditor value={body} onChange={setBody} showToolbar={true} />
           </div>
 

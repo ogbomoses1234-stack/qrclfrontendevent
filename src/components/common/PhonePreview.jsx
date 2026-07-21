@@ -17,8 +17,9 @@ export default function PhonePreview({ name, phone, message, qrUrl, showQR = tru
       <div className="flex-1 overflow-y-auto px-2 py-1.5">
         <div className="wa-bubble-out">
           <div
-            className="leading-relaxed text-[12px]"
-            dangerouslySetInnerHTML={{ __html: message }}
+            className="leading-relaxed text-[12px] break-words ql-snow ql-editor !p-0"
+            /* 🌟 Added fallback string check to avoid empty container runtime exceptions */
+            dangerouslySetInnerHTML={{ __html: message || '<p className="text-gray-300">Type your variant body message...</p>' }}
           ></div>
           {showQR && (
             <div className="mt-2 bg-white p-1.5 rounded border border-gray-200 text-center">
@@ -37,7 +38,7 @@ export default function PhonePreview({ name, phone, message, qrUrl, showQR = tru
         </div>
       </div>
 
-      {/* Bottom input bar (now part of the flex flow, not absolute) */}
+      {/* Bottom input bar */}
       <div className="flex-shrink-0 bg-[#f0f0f0] p-1.5 flex items-center gap-1.5">
         <i className="far fa-smile text-gray-400 text-sm pl-1"></i>
         <div className="bg-white rounded-full flex-1 h-7 px-2 flex items-center text-[10px] text-gray-300">

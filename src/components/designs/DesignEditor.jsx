@@ -1,18 +1,76 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Rnd } from 'react-rnd';
-import { useToast } from '../layout/Toast';          // corrected path (relative to components/designs/)
-import { createDesign } from '../../services/designService';
+import { useToast } from '../layout/Toast';
+import { createDesign, updateDesign } from '../../services/designService';
 
-export default function DesignEditor({ onClose, onDesignCreated }) {
+export default function DesignEditor({ onClose, onDesignCreated, initialDesign }) {
   const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [imagePreview, setImagePreview] = useState(initialDesign?.imageUrl || null);
   const [position, setPosition] = useState({ x: 50, y: 50, width: 150, height: 150 });
-  const [designName, setDesignName] = useState('');
+  const [designName, setDesignName] = useState(initialDesign?.name || '');
   const [saving, setSaving] = useState(false);
   const imgRef = useRef(null);
   const [naturalSize, setNaturalSize] = useState({ width: 1, height: 1 });
+  const initializedRef = useRef(false);
   const showToast = useToast();
 
+  // ─── Convert natural dimensions to screen-displayed dimensions ───
+  const convertToDisplayed = useCallback(() => {
+    const img = imgRef.current;
+    if (!img || !initialDesign?.qrPosition || initializedRef.current) return;
+    
+    // Use getBoundingClientRect for absolute precision on rendered size
+    const rect = img.getBoundingClientRect();
+    const displayedWidth = rect.width;
+    const displayedHeight = rect.height;
+
+    if (displayedWidth === 0 || displayedHeight === 0 || img.naturalWidth === 0) return;
+
+    const scaleX = displayedWidth / img.naturalWidth;
+    const scaleY = displayedHeight / img.naturalHeight;
+
+    setPosition({
+      x: Math.round(initialDesign.qrPosition.x * scaleX),
+      y: Math.round(initialDesign.qrPosition.y * scaleY),
+      width: Math.round(initialDesign.qrPosition.width * scaleX),
+      height: Math.round(initialDesign.qrPosition.height * scaleY),
+    });
+    initializedRef.current = true;
+  }, [initialDesign]);
+
+  // ─── Reset state when editing a different design ──────────────────
+  useEffect(() => {
+    initializedRef.current = false;
+    setDesignName(initialDesign?.name || '');
+    setImagePreview(initialDesign?.imageUrl || null);
+    
+    if (initialDesign?.qrPosition) {
+      setPosition(initialDesign.qrPosition);
+    } else {
+      setPosition({ x: 50, y: 50, width: 150, height: 150 });
+    }
+  }, [initialDesign]);
+
+  // ─── Handle Image Load Event ──────────────────────────────────
+  const handleImageLoad = (e) => {
+    const img = e.target;
+    setNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
+    requestAnimationFrame(convertToDisplayed);
+  };
+
+  // ─── Fallback for cached images where onLoad might bypass ───
+  useEffect(() => {
+    if (!imagePreview) return;
+    const img = imgRef.current;
+    if (!img) return;
+
+    if (img.complete && img.naturalWidth > 0) {
+      setNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
+      requestAnimationFrame(convertToDisplayed);
+    }
+  }, [imagePreview, convertToDisplayed]);
+
+  // ─── File upload handler ──────────────────────────────────────
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -20,27 +78,28 @@ export default function DesignEditor({ onClose, onDesignCreated }) {
     const reader = new FileReader();
     reader.onload = (ev) => setImagePreview(ev.target.result);
     reader.readAsDataURL(file);
+    initializedRef.current = false;
   };
 
-  const handleImageLoad = (e) => {
-    const img = e.target;
-    setNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
-  };
-
+  // ─── Save logic (re-scales screen coordinates back to natural) ───
   const handleSave = async () => {
-    if (!designName.trim() || !imageFile) {
-      showToast('warning', 'Missing info', 'Please provide a name and an image.');
+    if (!designName.trim()) {
+      showToast('warning', 'Missing info', 'Please provide a design name.');
+      return;
+    }
+    if (!initialDesign && !imageFile) {
+      showToast('warning', 'Missing image', 'Please upload an image.');
       return;
     }
     setSaving(true);
+
     try {
       const img = imgRef.current;
       if (!img) throw new Error('Image not loaded');
 
-      const displayedWidth = img.offsetWidth;
-      const displayedHeight = img.offsetHeight;
-      const scaleX = naturalSize.width / displayedWidth;
-      const scaleY = naturalSize.height / displayedHeight;
+      const rect = img.getBoundingClientRect();
+      const scaleX = naturalSize.width / rect.width;
+      const scaleY = naturalSize.height / rect.height;
 
       const naturalPosition = {
         x: Math.round(position.x * scaleX),
@@ -49,14 +108,23 @@ export default function DesignEditor({ onClose, onDesignCreated }) {
         height: Math.round(position.height * scaleY),
       };
 
-      const formData = new FormData();
-      formData.append('name', designName.trim());
-      formData.append('image', imageFile);
-      formData.append('qrPosition', JSON.stringify(naturalPosition));
+      if (initialDesign) {
+        const res = await updateDesign(initialDesign._id, {
+          name: designName.trim(),
+          qrPosition: naturalPosition,
+        });
+        showToast('success', 'Design updated', 'Your changes have been saved.');
+        if (onDesignCreated) onDesignCreated(res.data?.data || res.data);
+      } else {
+        const formData = new FormData();
+        formData.append('name', designName.trim());
+        formData.append('image', imageFile);
+        formData.append('qrPosition', JSON.stringify(naturalPosition));
 
-      const res = await createDesign(formData);
-      showToast('success', 'Design saved', 'Your design is ready to use.');
-      if (onDesignCreated) onDesignCreated(res.data?.data || res.data);
+        const res = await createDesign(formData);
+        showToast('success', 'Design saved', 'Your design is ready to use.');
+        if (onDesignCreated) onDesignCreated(res.data?.data || res.data);
+      }
       if (onClose) onClose();
     } catch (err) {
       showToast('error', 'Save failed', err.response?.data?.message || err.message);
@@ -67,7 +135,9 @@ export default function DesignEditor({ onClose, onDesignCreated }) {
 
   return (
     <div className="bg-white rounded-2xl p-6 max-w-3xl mx-auto">
-      <h3 className="text-lg font-bold text-gray-800 mb-4">Create Design</h3>
+      <h3 className="text-lg font-bold text-gray-800 mb-4">
+        {initialDesign ? 'Edit Design' : 'Create Design'}
+      </h3>
 
       <div className="mb-4">
         <label className="text-xs font-semibold text-gray-500">Design Name</label>
@@ -81,7 +151,9 @@ export default function DesignEditor({ onClose, onDesignCreated }) {
       </div>
 
       <div className="mb-4">
-        <label className="text-xs font-semibold text-gray-500">Upload Event Pass Image</label>
+        <label className="text-xs font-semibold text-gray-500">
+          {initialDesign ? 'Replace Image (optional)' : 'Upload Event Pass Image'}
+        </label>
         <input type="file" accept="image/*" onChange={handleFileChange} className="w-full mt-1 text-sm" />
       </div>
 
@@ -91,7 +163,7 @@ export default function DesignEditor({ onClose, onDesignCreated }) {
             ref={imgRef}
             src={imagePreview}
             alt="template"
-            className="max-w-full h-auto"
+            className="max-w-full h-auto block"
             style={{ maxHeight: '400px' }}
             onLoad={handleImageLoad}
           />
@@ -119,7 +191,7 @@ export default function DesignEditor({ onClose, onDesignCreated }) {
 
       {imagePreview && (
         <div className="text-xs text-gray-500 mb-4">
-          QR position: X={position.x} Y={position.y} · Size={position.width}×{position.height}px
+          QR position (on screen): X={position.x} Y={position.y} · Size={position.width}×{position.height}px
         </div>
       )}
 
