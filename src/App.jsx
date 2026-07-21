@@ -14,8 +14,9 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import SettingsPage from './pages/SettingsPage';
 import DesignsPage from './pages/DesignsPage';
 import SpreadsheetEditorPage from './pages/SpreadsheetEditorPage';
-
-   import VariantEditPage from './pages/VariantEditPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import TermsOfServicePage from './pages/TermsOfServicePage';
+import VariantEditPage from './pages/VariantEditPage';
 export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const toggleMobileMenu = () => setMobileMenuOpen((prev) => !prev);
@@ -28,7 +29,8 @@ export default function App() {
             {/* Auth pages – no sidebar/header */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
-
+<Route path="/privacy" element={<PrivacyPolicyPage />} />
+<Route path="/terms" element={<TermsOfServicePage />} />
             {/* App pages – with sidebar/header, protected */}
             <Route
               path="/*"
